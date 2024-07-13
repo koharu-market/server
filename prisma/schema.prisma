@@ -1,0 +1,187 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum YNEnum {
+  Y
+  N
+}
+
+enum RoleEnum {
+  ADMIN
+  USER
+}
+
+// 고객 정보
+model Member {
+  id          Int      @id @default(autoincrement())
+  email       String   @unique
+  name        String
+  image       String
+  phoneNumber String?
+  point       Int      @default(0)
+  birth       String?
+  role        RoleEnum @default(USER)
+  createdAt   DateTime @default(now())
+
+  Addresses Address[] // 일대다 관계
+  Carts     Cart[]
+  Orders    Order[]
+  Review    Review[]
+}
+
+// 고객 배송지 정보
+model Address {
+  id Int @id @default(autoincrement())
+
+  memberId Int
+  Member   Member @relation(fields: [memberId], references: [id])
+
+  name            String
+  address         String
+  addressDetail   String
+  zipCode         String
+  phoneNumber     String
+  default         YNEnum  @default(N)
+  deliveryRequest String?
+}
+
+// 카테고리
+model Category {
+  id            Int    @id @default(autoincrement())
+  name          String @unique
+  displayOption YNEnum @default(Y)
+  order         Int
+
+  Products Product[]
+}
+
+// 상품
+model Product {
+  id Int @id @default(autoincrement())
+
+  categoryId Int
+  Category   Category @relation(fields: [categoryId], references: [id])
+
+  name          String
+  content       String   @db.Text
+  price         Int
+  sale          Int
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  count         Int
+  deleted       YNEnum?  @default(N)
+  img1          String
+  img2          String?
+  img3          String?
+  img4          String?
+  img5          String?
+  img6          String?
+  seoTitle      String
+  buyMinCount   Int      @default(0)
+  buyMaxCount   Int      @default(0)
+  displayOption YNEnum   @default(Y)
+  type1         YNEnum   @default(N) // 추천상품
+  type2         YNEnum   @default(N) // 신상품
+  type3         YNEnum   @default(N) // 인기상품
+  type4         YNEnum   @default(N) // 할인상품
+  optionSubject String? // 상품 옵션 ","로 구분
+  supplySubject String? // 상품 옵션 ","로 구분
+
+  Carts          Cart[]
+  OrderDetails   OrderDetail[]
+  ProductOptions ProductOption[]
+  Review         Review[]
+}
+
+// 상품옵션
+model ProductOption {
+  id Int @id @default(autoincrement())
+
+  productId Int
+  Product   Product @relation(fields: [productId], references: [id])
+
+  count         Int
+  price         Int // 추가 가격
+  type          Int      @default(0) // 0 = 기분옵션, 1 = 추가옵션
+  displayOption YNEnum   @default(Y)
+  // name          String // ASCII코드 30으로 구분
+  name          String[] // ASCII코드 30으로 구분
+}
+
+model Review {
+  id Int @id @default(autoincrement())
+
+  productId Int
+  Product   Product @relation(fields: [productId], references: [id])
+
+  memberId Int
+  Member   Member @relation(fields: [memberId], references: [id])
+
+  score     Int
+  content   String
+  img1      String?
+  img2      String?
+  img3      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// 장바구니
+model Cart {
+  id Int @id @default(autoincrement())
+
+  productId Int
+  Product   Product @relation(fields: [productId], references: [id])
+
+  memberId Int
+  Member   Member @relation(fields: [memberId], references: [id])
+
+  count     Int
+  createdAt DateTime @default(now())
+}
+
+// 주문
+model Order {
+  id Int @id @default(autoincrement())
+
+  memberId Int
+  Member   Member @relation(fields: [memberId], references: [id])
+
+  orderDate       DateTime @default(now())
+  address         String
+  addressDetail   String
+  zipCode         String
+  phoneNumber     String
+  customerName    String
+  deliveryRequest String?
+  status          YNEnum
+  totalAmount     Int
+
+  orderDetails OrderDetail[]
+}
+
+// 주문 상세
+model OrderDetail {
+  id Int @id @default(autoincrement())
+
+  orderId Int
+  Order   Order @relation(fields: [orderId], references: [id])
+
+  productId Int
+  Product   Product @relation(fields: [productId], references: [id])
+
+  price Int
+  count Int
+}
